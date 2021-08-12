@@ -14,7 +14,10 @@ import javafx.scene.text.Text;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 public class ExchangeCalculator implements Initializable {
     public TableColumn<Currency, String> currencyColumn;
@@ -49,7 +52,6 @@ public class ExchangeCalculator implements Initializable {
                     list.add(new Currency(k, v));
                 }
                 catch (ClassCastException e) {
-                    System.out.println(5678);
                     list.add(new Currency(k, Double.parseDouble(String.valueOf(v))));
                 }
             });
@@ -61,64 +63,77 @@ public class ExchangeCalculator implements Initializable {
     }
 
     public void convertCurrency(ActionEvent actionEvent) {
-        String inputCurrency = inputCurrencyComboBox.getValue().substring(0,3);
-        String outputCurrency = outputCurrencyComboBox.getValue().substring(0,3);
-        Double amount, result, rate;
-        try {
-            amount = Double.parseDouble(amountTextField.getText());
+        if (inputCurrencyComboBox.getValue().equals(outputCurrencyComboBox.getValue())) {
+            showAlert();
+        } else {
+            String inputCurrency = inputCurrencyComboBox.getValue().substring(0, 3);
+            String outputCurrency = outputCurrencyComboBox.getValue().substring(0, 3);
+            Double amount, result, rate;
+            try {
+                amount = Double.parseDouble(amountTextField.getText());
+            } catch (NumberFormatException e) {
+                alertText.setText("Wrong input in amount field. Please try again.");
+                amountTextField.setText("0.00");
+                amount = 0.0;
+            }
+            try {
+                rate = handler.getExchangeRates(inputCurrency, outputCurrency).get(outputCurrency);
+                exchangeRateText.setText(rate.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+                alertText.setText("Service currently unavailable. Please try again later.");
+                rate = 0.0;
+            }
+            result = amount * rate;
+            resultTextField.setText(result.toString());
         }
-        catch (NumberFormatException e) {
-            alertText.setText("Wrong input in amount field. Please try again.");
-            amountTextField.setText("0.00");
-            amount = 0.0;
-        }
-        try {
-            rate = handler.getExchangeRates(inputCurrency, outputCurrency).get(outputCurrency);
-            exchangeRateText.setText(rate.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-            alertText.setText("Service currently unavailable. Please try again later.");
-            rate = 0.0;
-        }
-        result = amount * rate;
-        resultTextField.setText(result.toString());
-
     }
 
     public void plotData(ActionEvent mouseEvent) {
-        Map<String, Double> rates;
-        XYChart.Series series = new XYChart.Series();
-        currencyChart.getData().clear();
-        series.setName("Rate");
-        try {
-            List<LocalDate> range = getDateRange();
-            rates = handler.getExchangeRates(xaxisList.getValue().substring(0,3),
-                    yaxisList.getValue().substring(0,3), range.get(1), range.get(0));
-            Double maxRate = 0.0;
-            Double minRate = 10000.0;
-            for (Map.Entry<String, Double> entry : rates.entrySet()) {
-                series.getData().add(new XYChart.Data(entry.getKey(), entry.getValue()));
-                if (maxRate < entry.getValue()) {
-                    maxRate = entry.getValue();
-                } else if (minRate > entry.getValue()) {
-                    minRate = entry.getValue();
+        if (xaxisList.getValue().equals(yaxisList.getValue())) {
+            showAlert();
+        } else {
+            Map<String, Double> rates;
+            XYChart.Series series = new XYChart.Series();
+            currencyChart.getData().clear();
+            series.setName("Rate");
+            try {
+                List<LocalDate> range = getDateRange();
+                rates = handler.getExchangeRates(xaxisList.getValue().substring(0, 3),
+                        yaxisList.getValue().substring(0, 3), range.get(1), range.get(0));
+                Double maxRate = 0.0;
+                Double minRate = 10000.0;
+                for (Map.Entry<String, Double> entry : rates.entrySet()) {
+                    series.getData().add(new XYChart.Data(entry.getKey(), entry.getValue()));
+                    if (maxRate < entry.getValue()) {
+                        maxRate = entry.getValue();
+                    } else if (minRate > entry.getValue()) {
+                        minRate = entry.getValue();
+                    }
                 }
-            }
-            yAxis.setAutoRanging(false);
-            yAxis.setLowerBound(minRate - 0.05 * minRate);
-            yAxis.setUpperBound(maxRate + 0.05 * maxRate);
-            currencyChart.getData().add(series);
+                yAxis.setAutoRanging(false);
+                yAxis.setLowerBound(minRate - 0.05 * minRate);
+                yAxis.setUpperBound(maxRate + 0.05 * maxRate);
+                currencyChart.getData().add(series);
 
-        } catch (Exception e) {
-            System.out.println("err");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    private void showAlert() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Wrong input");
+        alert.setHeaderText(null);
+        alert.setContentText("Same currencies were selected. Please correct inputs");
+        alert.showAndWait();
     }
 
     private List<LocalDate> getDateRange() {
         List<LocalDate> range = new ArrayList<>();
         range.add(LocalDate.now());
         if (weekHistoryRadioButton.isSelected()) {
-            System.out.println(2343);
             range.add(LocalDate.now().minusWeeks(1));
         }
         if (monthHistoryRadioButton.isSelected()) {
@@ -127,7 +142,6 @@ public class ExchangeCalculator implements Initializable {
         if (customHistoryRadioButton.isSelected()) {
             range.add(startDatePicker.getValue());
         }
-        System.out.println(range);
         return range;
     }
 
@@ -157,6 +171,11 @@ public class ExchangeCalculator implements Initializable {
         outputCurrencyComboBox.getItems().addAll(handler.getCurrencyCodes());
         xaxisList.getItems().addAll(handler.getCurrencyCodes());
         yaxisList.getItems().addAll(handler.getCurrencyCodes());
+
+        inputCurrencyComboBox.getSelectionModel().selectFirst();
+        outputCurrencyComboBox.getSelectionModel().select(1);
+        xaxisList.getSelectionModel().selectFirst();
+        yaxisList.getSelectionModel().select(1);
     }
 
     public void setRadioButton(ActionEvent actionEvent) {

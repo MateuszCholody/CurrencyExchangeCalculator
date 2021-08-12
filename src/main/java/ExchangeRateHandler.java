@@ -11,12 +11,11 @@ import java.util.*;
 public class ExchangeRateHandler {
     private static ExchangeRateHandler handler = null;
     private static List<String> currencyCodes;
-    private String apiAddress = "https://api.frankfurter.app/";
+    private final String apiAddress = "https://api.frankfurter.app/";
 
 
     private ExchangeRateHandler() {
         setCurrencyCodes();
-
     }
 
     public static ExchangeRateHandler getInstance() {
@@ -32,9 +31,8 @@ public class ExchangeRateHandler {
                 new TypeReference<Map<String, Object>>() {
                 });
         Map<String, Double> ratesMap = new HashMap<>();
-        ((Map<String, Object>) jsonFileAsMap.get("rates")).forEach((k, v) -> {
-            ratesMap.put(k, Double.valueOf(v.toString()));
-        });
+        ((Map<String, Object>) jsonFileAsMap.get("rates")).forEach((k, v) ->
+                ratesMap.put(k, Double.valueOf(v.toString())));
         return ratesMap;
     }
 
@@ -46,9 +44,8 @@ public class ExchangeRateHandler {
                 new TypeReference<Map<String, Object>>() {
                 });
         Map<String, Double> ratesMap = new HashMap<>();
-        ((Map<String, Object>) jsonFileAsMap.get("rates")).forEach((k, v) -> {
-            ratesMap.put(k, Double.valueOf(v.toString()));
-        });
+        ((Map<String, Object>) jsonFileAsMap.get("rates")).forEach((k, v) ->
+                ratesMap.put(k, Double.valueOf(v.toString())));
         return ratesMap;
     }
 
@@ -65,30 +62,8 @@ public class ExchangeRateHandler {
         return ratesMap;
     }
 
-    /*
-
-    public Map<String, Double> getExchangeRates(String base, String outputCurrency, LocalDate date) throws IOException {
-        String query = new StringBuilder(apiAddress).append(date.getYear()).append("-").append(date.getMonth()).
-                append("-").append(date.getDayOfMonth()).append("?from=").append(base.toUpperCase()).
-                append("&to=").append(outputCurrency).toString();
-
-        Map<String, > jsonFileAsMap = new ObjectMapper().readValue(downloadData(query),
-                new TypeReference<Map<String, Object>>() {
-                });
-        Map<String, Double> ratesMap = (Map<String, Object>) jsonFileAsMap.get("rates");
-        return ratesMap;
-    }
-
-     */
-
     public Map<String, Double> getExchangeRates(String base, String outputCurrency, LocalDate startDate, LocalDate endDate) throws IOException {
-        /* String query = new StringBuilder(apiAddress).append(startDate.getYear()).append("-").
-                append(startDate.getMonth()).append("-").append(startDate.getDayOfMonth()).append("..").
-                append(endDate.getYear()).append("-").append(endDate.getMonth()).append("-").
-                append(endDate.getDayOfMonth()).append("?from=").append(base.toUpperCase()).append("&to=").
-                append(outputCurrency).toString();
 
-         */
         String query = new StringBuilder(apiAddress).append(new StringBuilder(startDate.toString())).append("..").
                 append(new StringBuilder(endDate.toString())).append("?from=").append(base.toUpperCase()).append("&to=").
                 append(outputCurrency).toString();
@@ -130,7 +105,6 @@ public class ExchangeRateHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(jsonFileAsMap);
         jsonFileAsMap.forEach((k, v) -> currencyCodes.add(k.concat(" | ").concat(v)));
     }
 }
